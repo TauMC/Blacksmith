@@ -2,7 +2,9 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id "com.cinnober.gradle.semver-git" version "3.0.0" apply false
 }
+
 
 allprojects {
     repositories {
@@ -14,7 +16,8 @@ allprojects {
         }
     }
     group 'org.taumc'
-    version '1.0-SNAPSHOT'
+    ext.snapshotSuffix = '<count>.g<sha>'
+    apply plugin: 'com.cinnober.gradle.semver-git'
 }
 
 configurations {
