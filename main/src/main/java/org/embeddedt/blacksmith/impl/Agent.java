@@ -10,8 +10,12 @@ import java.security.CodeSource;
  * The main agent class. Handles setting up an isolated classloader to get the rest of the agent loaded.
  */
 public class Agent {
-
+    private static final String LOADED = "loaded";
     public static void premain(String args, Instrumentation instrumentation) {
+        if(LOADED.equals(System.getProperty("blacksmith.loaded"))) {
+            return;
+        }
+        System.setProperty("blacksmith.loaded", LOADED);
         /* get a completely isolated classloader as soon as possible */
         CodeSource selfSource = Agent.class.getProtectionDomain().getCodeSource();
         URL[] targetURL = new URL[1];
