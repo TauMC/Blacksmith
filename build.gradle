@@ -72,8 +72,8 @@ shadowJar {
 
 publishing {
     publications {
-        shadow(MavenPublication) {
-            from components.shadow
+        shadow(MavenPublication) { publication ->
+            project.shadow.component(publication)
         }
     }
     repositories {
