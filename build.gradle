@@ -13,7 +13,7 @@ allprojects {
             url = 'https://maven.neoforged.net/'
         }
     }
-    group 'org.embeddedt'
+    group 'org.taumc'
     version '1.0-SNAPSHOT'
 }
 
