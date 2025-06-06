@@ -3,4 +3,5 @@ rootProject.name = 'blacksmith'
 include(":java17")
 include(":launchwrapper")
 include(":main")
+include(":tests:forge201")
 include(":tests:neo211")

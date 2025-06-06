@@ -1,0 +1,38 @@
+plugins {
+    id 'idea'
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev.legacyforge' version '2.0.89'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+configurations {
+    blacksmithAgent {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    blacksmithAgent(project(path: ":", configuration: "productionAgent"))
+}
+
+legacyForge {
+    // Specify the version of NeoForge to use.
+    version = "1.20.1-47.4.0"
+
+    // Default run configurations.
+    // These can be tweaked, removed, or duplicated as needed.
+    runs {
+        client {
+            client()
+
+            jvmArgument "-javaagent:" + configurations.blacksmithAgent.singleFile.getPath().toString()
+        }
+    }
+}
+
+tasks.named("classes") {
+    dependsOn(configurations.blacksmithAgent)
+}
