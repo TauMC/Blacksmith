@@ -67,7 +67,6 @@ shadowJar {
     // Workaround: double-nest the jar.
     from shadowBugWorkaround
 }
-assemble.dependsOn shadowJar
 
 shadowJar {
     archiveClassifier.set('')
@@ -79,8 +78,22 @@ configurations {
     }
 }
 
+tasks.register("packageJar", Copy) {
+    from(tasks.named("shadowJar").get().archiveFile)
+    rename { String fileName ->
+        // a simple way is to remove the "-$version" from the jar filename
+        // but you can customize the filename replacement rule as you wish.
+        fileName.replace("-$project.version", "")
+    }
+    into("${rootProject.layout.buildDirectory.get()}/libs")
+}
+
+assemble.dependsOn tasks.named("packageJar")
+
 artifacts {
-    productionAgent(shadowJar)
+    productionAgent(rootProject.layout.buildDirectory.file("libs/blacksmith.jar")) {
+        builtBy(tasks.named("packageJar"))
+    }
 }
 
 publishing {

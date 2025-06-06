@@ -42,6 +42,7 @@ public class TransformerCore {
         TRANSFORMERS.add(new BackgroundScanHandlerTransformer());
         TRANSFORMERS.add(new TransformerDiscovererConstantsTransformer());
         TRANSFORMERS.add(new ModDirTransformerDiscovererTransformer());
+        TRANSFORMERS.add(new BootstrapLauncherTransformer());
     }
 
     public static void log(String s) {
