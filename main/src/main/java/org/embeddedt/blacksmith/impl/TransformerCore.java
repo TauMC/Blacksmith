@@ -40,6 +40,7 @@ public class TransformerCore {
         TRANSFORMERS.add(new ModuleLayerHandlerTransformer());
         TRANSFORMERS.add(new FileWatcherTransformer());
         TRANSFORMERS.add(new BackgroundScanHandlerTransformer());
+        TRANSFORMERS.add(new TransformerDiscovererConstantsTransformer());
     }
 
     public static void log(String s) {

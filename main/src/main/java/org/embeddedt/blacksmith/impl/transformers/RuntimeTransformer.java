@@ -1,13 +1,18 @@
 package org.embeddedt.blacksmith.impl.transformers;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.instrument.IllegalClassFormatException;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public interface RuntimeTransformer {
     String HOOK_CLASS = "org/embeddedt/blacksmith/impl/hooks/Hooks";
@@ -24,5 +29,23 @@ public interface RuntimeTransformer {
     static <T extends AbstractInsnNode> T swapInstruction(InsnList list, AbstractInsnNode oldInsn, T newInsn) {
         list.set(oldInsn, newInsn);
         return newInsn;
+    }
+
+    static int nextLocalVariableIndex(MethodNode method) {
+        int maxIndex = (method.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+
+        for (LocalVariableNode var : method.localVariables) {
+            int varSize = Type.getType(var.desc).getSize();
+            int endIndex = var.index + varSize;
+            if (endIndex > maxIndex) {
+                maxIndex = endIndex;
+            }
+        }
+
+        return maxIndex;
+    }
+
+    static Stream<AbstractInsnNode> streamInsnList(InsnList list) {
+        return StreamSupport.stream(list.spliterator(), false);
     }
 }
