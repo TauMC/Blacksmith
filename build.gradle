@@ -85,13 +85,13 @@ tasks.register("packageJar", Copy) {
         // but you can customize the filename replacement rule as you wish.
         fileName.replace("-$project.version", "")
     }
-    into("${rootProject.layout.buildDirectory.get()}/libs")
+    into("${rootProject.layout.buildDirectory.get()}/agents")
 }
 
 assemble.dependsOn tasks.named("packageJar")
 
 artifacts {
-    productionAgent(rootProject.layout.buildDirectory.file("libs/blacksmith.jar")) {
+    productionAgent(rootProject.layout.buildDirectory.file("agents/blacksmith.jar")) {
         builtBy(tasks.named("packageJar"))
     }
 }
