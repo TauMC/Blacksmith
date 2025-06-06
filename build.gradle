@@ -73,6 +73,16 @@ shadowJar {
     archiveClassifier.set('')
 }
 
+configurations {
+    productionAgent {
+        canBeResolved = false
+    }
+}
+
+artifacts {
+    productionAgent(shadowJar)
+}
+
 publishing {
     publications {
         shadow(MavenPublication) { publication ->

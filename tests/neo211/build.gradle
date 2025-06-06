@@ -1,0 +1,39 @@
+plugins {
+    id 'idea'
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.89'
+}
+
+// Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+configurations {
+    blacksmithAgent {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    blacksmithAgent(project(path: ":", configuration: "productionAgent"))
+}
+
+neoForge {
+    // Specify the version of NeoForge to use.
+    version = "21.1.174"
+
+    // Default run configurations.
+    // These can be tweaked, removed, or duplicated as needed.
+    runs {
+        client {
+            client()
+
+            jvmArgument "-javaagent:" + configurations.blacksmithAgent.singleFile.getPath().toString()
+        }
+    }
+}
+
+tasks.named("classes") {
+    dependsOn(configurations.blacksmithAgent)
+}
