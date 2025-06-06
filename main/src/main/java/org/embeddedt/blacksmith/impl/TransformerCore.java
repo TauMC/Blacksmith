@@ -41,6 +41,7 @@ public class TransformerCore {
         TRANSFORMERS.add(new FileWatcherTransformer());
         TRANSFORMERS.add(new BackgroundScanHandlerTransformer());
         TRANSFORMERS.add(new TransformerDiscovererConstantsTransformer());
+        TRANSFORMERS.add(new ModDirTransformerDiscovererTransformer());
     }
 
     public static void log(String s) {
