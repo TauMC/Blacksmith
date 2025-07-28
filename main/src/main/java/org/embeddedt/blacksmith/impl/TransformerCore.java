@@ -1,5 +1,7 @@
 package org.embeddedt.blacksmith.impl;
 
+import net.lenni0451.classtransform.TransformerManager;
+import net.lenni0451.classtransform.utils.tree.BasicClassProvider;
 import org.embeddedt.blacksmith.impl.transformers.*;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -25,6 +27,7 @@ import java.util.jar.JarFile;
 
 public class TransformerCore {
     private static final List<RuntimeTransformer> TRANSFORMERS = new ArrayList<>();
+    private static final List<String> NEW_TRANSFORMERS = new ArrayList<>();
 
     private static final boolean DEBUG = Boolean.getBoolean("blacksmith.debug");
 
@@ -43,6 +46,7 @@ public class TransformerCore {
         TRANSFORMERS.add(new TransformerDiscovererConstantsTransformer());
         TRANSFORMERS.add(new ModDirTransformerDiscovererTransformer());
         TRANSFORMERS.add(new BootstrapLauncherTransformer());
+        NEW_TRANSFORMERS.add("ClassTransformerAuditor");
     }
 
     public static void log(String s) {
@@ -85,11 +89,28 @@ public class TransformerCore {
         }
     }
 
+    private static void dumpDebugClass(String s, byte[] data) {
+        Path fp = Paths.get("/tmp/" + s + ".class");
+        try {
+            Files.createDirectories(fp.getParent());
+            try(OutputStream os = Files.newOutputStream(fp)) {
+                os.write(data);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @SuppressWarnings("unused")
     public static void start(Instrumentation instrumentation) {
         log("Loaded on separate classloader");
         instrumentation.addTransformer(new AgentTransformer());
         loadJ17Jar(instrumentation);
+        TransformerManager transformerManager = new TransformerManager(new BasicClassProvider());
+        NEW_TRANSFORMERS.forEach(t -> transformerManager.addTransformer("org.embeddedt.blacksmith.impl.transformers." + t));
+        transformerManager.getDebugger().setDumpClasses(true);
+        instrumentation.addTransformer(transformerManager);
+        log("Injected all transformers");
     }
 
     private static class AgentTransformer implements ClassFileTransformer {
@@ -106,18 +127,6 @@ public class TransformerCore {
                     }
                     list.add(transformer);
                 }
-            }
-        }
-
-        private void dumpDebugClass(String s, byte[] data) {
-            Path fp = Paths.get("/tmp/" + s + ".class");
-            try {
-                Files.createDirectories(fp.getParent());
-                try(OutputStream os = Files.newOutputStream(fp)) {
-                    os.write(data);
-                }
-            } catch(IOException e) {
-                e.printStackTrace();
             }
         }
 

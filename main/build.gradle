@@ -3,6 +3,18 @@ plugins {
     id 'java-library'
 }
 
+sourceSets {
+    java17 {
+        compileClasspath += main.compileClasspath
+    }
+    test {
+        compileClasspath += sourceSets.main.output + sourceSets.java17.output
+        compileClasspath += sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.java17.runtimeClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.java17.output
+    }
+}
+
 dependencies {
     compileOnly "net.minecraftforge:forgespi:3.2.0"
     implementation "org.ow2.asm:asm-tree:9.7"
@@ -11,7 +23,20 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
+    implementation "net.lenni0451.classtransform:core:1.14.1"
+    implementation("net.lenni0451.classtransform:additionalclassprovider:1.14.1") {
+        transitive = false
+    }
+
+    java17Implementation "cpw.mods:modlauncher:10.0.9"
+    java17CompileOnly "org.apache.logging.log4j:log4j-api:2.22.1"
+
     //implementation('net.bytebuddy:byte-buddy-agent:1.12.22')
+
+    testImplementation platform("org.junit:junit-bom:5.13.2")
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType(JavaCompile) {
@@ -20,13 +45,26 @@ tasks.withType(JavaCompile) {
     // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
     // If Javadoc is generated, this must be specified in that task too.
     options.encoding = "UTF-8"
+}
+
+tasks.named("compileJava", JavaCompile) {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
 }
 
+tasks.named("compileJava17Java", JavaCompile) {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 shadowJar {
+    from(sourceSets.java17.output)
+    dependsOn(tasks.named("compileJava17Java"))
+
     relocate 'net.bytebuddy.agent', 'org.embeddedt.blacksmith.shadow.bytebuddyagent'
+    // TODO relocation of ASM breaks ClassTransformerAuditor
     relocate 'org.objectweb.asm', 'org.embeddedt.blacksmith.shadow.asm'
+    relocate 'net.lenni0451.classtransform', 'org.embeddedt.blacksmith.shadow.classtransform'
     relocate 'com.google.gson', 'org.embeddedt.blacksmith.shadow.gson'
 }
 
@@ -40,3 +78,7 @@ shadowJar {
 }
 
 jar.finalizedBy(shadowJar)
+
+test {
+    useJUnitPlatform()
+}
