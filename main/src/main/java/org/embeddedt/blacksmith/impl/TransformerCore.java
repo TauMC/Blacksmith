@@ -43,6 +43,8 @@ public class TransformerCore {
         TRANSFORMERS.add(new TransformerDiscovererConstantsTransformer());
         TRANSFORMERS.add(new ModDirTransformerDiscovererTransformer());
         TRANSFORMERS.add(new BootstrapLauncherTransformer());
+        TRANSFORMERS.add(new UnionFileSystemTransformer());
+        TRANSFORMERS.add(new PathFileSystemTransformer());
     }
 
     public static void log(String s) {

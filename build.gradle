@@ -11,8 +11,12 @@ allprojects {
         mavenCentral()
         mavenLocal()
         maven {
-            name = 'forge'
+            name = 'neoforge'
             url = 'https://maven.neoforged.net/'
+        }
+        maven {
+            name = 'forge'
+            url = 'https://maven.minecraftforge.net/'
         }
     }
     group 'org.taumc'
