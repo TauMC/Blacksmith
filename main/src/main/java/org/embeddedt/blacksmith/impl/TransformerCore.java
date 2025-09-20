@@ -10,9 +10,6 @@ import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.JarFile;
 
 public class TransformerCore {
@@ -45,6 +43,7 @@ public class TransformerCore {
         TRANSFORMERS.add(new BootstrapLauncherTransformer());
         TRANSFORMERS.add(new UnionFileSystemTransformer());
         TRANSFORMERS.add(new PathFileSystemTransformer());
+        TRANSFORMERS.add(new MixinServiceLaunchWrapperTransformer());
     }
 
     public static void log(String s) {
@@ -87,28 +86,33 @@ public class TransformerCore {
         }
     }
 
+    private static Map<String, List<RuntimeTransformer>> getGeneralTransformers() {
+        HashMap<String, List<RuntimeTransformer>> transformersByClass = new HashMap<>();
+        for(RuntimeTransformer transformer : TRANSFORMERS) {
+            for(String clz : transformer.getTransformedClasses()) {
+                List<RuntimeTransformer> list = transformersByClass.get(clz);
+                if(list == null) {
+                    list = new ArrayList<>();
+                    transformersByClass.put(clz, list);
+                }
+                list.add(transformer);
+            }
+        }
+        return transformersByClass;
+    }
+
     @SuppressWarnings("unused")
     public static void start(Instrumentation instrumentation) {
         log("Loaded on separate classloader");
-        instrumentation.addTransformer(new AgentTransformer());
+        instrumentation.addTransformer(new AgentTransformer(getGeneralTransformers()));
         loadJ17Jar(instrumentation);
     }
 
     private static class AgentTransformer implements ClassFileTransformer {
-        private final HashMap<String, List<RuntimeTransformer>> transformersByClass;
+        private final Map<String, List<RuntimeTransformer>> transformersByClass;
 
-        AgentTransformer() {
-            transformersByClass = new HashMap<>();
-            for(RuntimeTransformer transformer : TRANSFORMERS) {
-                for(String clz : transformer.getTransformedClasses()) {
-                    List<RuntimeTransformer> list = transformersByClass.get(clz);
-                    if(list == null) {
-                        list = new ArrayList<>();
-                        transformersByClass.put(clz, list);
-                    }
-                    list.add(transformer);
-                }
-            }
+        AgentTransformer(Map<String, List<RuntimeTransformer>> transformersByClass) {
+            this.transformersByClass = transformersByClass;
         }
 
         private void dumpDebugClass(String s, byte[] data) {
@@ -135,7 +139,7 @@ public class TransformerCore {
                 reader.accept(node, 0);
                 int flags = 0;
                 for(RuntimeTransformer t : transformers) {
-                    t.transformClass(node);
+                    node = t.replaceClass(node);
                     flags |= t.getWriteFlags();
                 }
                 ClassWriter writer = new ClassWriter(flags);

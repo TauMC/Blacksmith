@@ -21,7 +21,14 @@ public interface RuntimeTransformer {
     String HOOK_CLASS = "org/embeddedt/blacksmith/impl/hooks/Hooks";
     String HOOK17_CLASS = "org/embeddedt/blacksmith/impl/Hooks17";
     List<String> getTransformedClasses();
+
+    @Deprecated
     void transformClass(ClassNode data) throws IllegalClassFormatException;
+
+    default ClassNode replaceClass(ClassNode data) throws IllegalClassFormatException {
+        transformClass(data);
+        return data;
+    }
 
     default int getWriteFlags() { return 0; }
 
