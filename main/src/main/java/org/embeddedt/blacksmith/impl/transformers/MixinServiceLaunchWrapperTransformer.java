@@ -25,7 +25,7 @@ public class MixinServiceLaunchWrapperTransformer implements RuntimeTransformer 
         } catch (NumberFormatException e) {
             return false;
         }
-        return major >= 24 && System.getProperty("java.class.path").contains("cpw/mods/modlauncher");
+        return major >= 24 && System.getProperty("java.class.path").replace('\\', '/').contains("cpw/mods/modlauncher");
     }
 
     @Override
