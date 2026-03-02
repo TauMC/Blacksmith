@@ -83,6 +83,20 @@ public class Hooks {
         return validPaths.stream();
     }
 
+    public static Object getZipFsChannel(java.lang.invoke.MethodHandle mh, FileSystem fs) throws Throwable {
+        if (fs.getClass().getName().equals("jdk.nio.zipfs.ZipFileSystem")) {
+            return mh.invoke(fs);
+        }
+        return null;
+    }
+
+    public static boolean zipPathExists(java.lang.invoke.MethodHandle mh, Path path) throws Throwable {
+        if (path.getClass().getName().equals("jdk.nio.zipfs.ZipPath")) {
+            return (boolean) mh.invoke(path);
+        }
+        return Files.exists(path);
+    }
+
     public static ClassLoader getClassLoaderJ9(Class<?> clz) {
         ClassLoader oldCl = clz.getClassLoader();
         URLClassLoader urlCl;

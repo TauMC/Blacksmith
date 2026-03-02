@@ -28,6 +28,33 @@ public class UnionFileSystemTransformer implements RuntimeTransformer {
                             invokeNode.owner = "org/embeddedt/blacksmith/impl/sjh/ZipfsInterner";
                             invokeNode.name = "internFilesystem";
                         }
+                    } else if(i.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+                        MethodInsnNode invokeNode = (MethodInsnNode)i;
+                        // Match ZIPFS_CH.invoke(zfs) specifically — the polymorphic descriptor
+                        // takes a FileSystem argument, distinguishing it from FCI_UNINTERUPTIBLE.invoke(fci)
+                        if(invokeNode.owner.equals("java/lang/invoke/MethodHandle")
+                                && invokeNode.name.equals("invoke")
+                                && invokeNode.desc.contains("FileSystem")) {
+                            System.out.println("Replacing ZIPFS_CH.invoke with safe hook");
+                            invokeNode.setOpcode(Opcodes.INVOKESTATIC);
+                            invokeNode.owner = "org/embeddedt/blacksmith/impl/hooks/Hooks";
+                            invokeNode.name = "getZipFsChannel";
+                            invokeNode.desc = "(Ljava/lang/invoke/MethodHandle;Ljava/nio/file/FileSystem;)Ljava/lang/Object;";
+                        }
+                    }
+                }
+            } else if(m.name.equals("zipFsExists")) {
+                for(AbstractInsnNode i : m.instructions) {
+                    if(i.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+                        MethodInsnNode invokeNode = (MethodInsnNode)i;
+                        if(invokeNode.owner.equals("java/lang/invoke/MethodHandle")
+                                && invokeNode.name.equals("invoke")) {
+                            System.out.println("Replacing ZIPFS_EXISTS.invoke with safe hook");
+                            invokeNode.setOpcode(Opcodes.INVOKESTATIC);
+                            invokeNode.owner = "org/embeddedt/blacksmith/impl/hooks/Hooks";
+                            invokeNode.name = "zipPathExists";
+                            invokeNode.desc = "(Ljava/lang/invoke/MethodHandle;Ljava/nio/file/Path;)Z";
+                        }
                     }
                 }
             }
