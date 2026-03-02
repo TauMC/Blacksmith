@@ -31,6 +31,7 @@ public class TransformerCore {
     static {
         TRANSFORMERS.add(new FMLScannerTransformer());
         TRANSFORMERS.add(new SJHJarTransformer());
+        TRANSFORMERS.add(new SecureJarVerifierTransformer());
         TRANSFORMERS.add(new AbstractModProviderTransformer());
         TRANSFORMERS.add(new LaunchClassLoaderTransformer());
         TRANSFORMERS.add(new LaunchTransformer());
