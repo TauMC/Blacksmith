@@ -213,14 +213,23 @@ public class EfficientZipFileSystem extends FileSystem {
      * Uses the precomputed directory tree first, then ZipFile.getEntry() for files.
      */
     ZipEntry resolve(EfficientZipPath path) {
+        // Check cache first
+        ZipEntry cached = path.getCachedEntry();
+        if (cached != null) {
+            return cached;
+        }
+
         String[] components = path.getComponents();
         if (components.length == 0) {
-            return new ZipEntry("/");
+            var entry = new ZipEntry("/");
+            path.setCachedEntry(entry);
+            return entry;
         }
 
         var entry = zipFile.getEntry(path.getEntryName());
 
         if (entry != null) {
+            path.setCachedEntry(entry);
             return entry;
         }
 
@@ -228,7 +237,9 @@ public class EfficientZipFileSystem extends FileSystem {
         if (resolveDir(path) != null) {
             String entryName = path.getEntryName() + "/";
             entry = zipFile.getEntry(entryName);
-            return entry != null ? entry : new ZipEntry(entryName);
+            entry = entry != null ? entry : new ZipEntry(entryName);
+            path.setCachedEntry(entry);
+            return entry;
         }
 
         // Not exists

@@ -7,12 +7,15 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.zip.ZipEntry;
 
 public class EfficientZipPath implements Path {
     private final EfficientZipFileSystem fs;
     private final boolean absolute;
     private final String[] components; // individual path segments, never null, never contain slashes
     private volatile String pathString; // lazily computed
+    private volatile String entryName; // lazily computed
+    private volatile ZipEntry cachedEntry; // lazily cached resolved entry
 
     private static final String[] EMPTY = new String[0];
 
@@ -255,7 +258,20 @@ public class EfficientZipPath implements Path {
     String getEntryName() {
         if (components.length == 0) return "";
         if (components.length == 1) return components[0];
-        return String.join("/", components);
+        String s = entryName;
+        if (s == null) {
+            s = String.join("/", components);
+            entryName = s;
+        }
+        return s;
+    }
+
+    ZipEntry getCachedEntry() {
+        return cachedEntry;
+    }
+
+    void setCachedEntry(ZipEntry entry) {
+        this.cachedEntry = entry;
     }
 
     @Override
