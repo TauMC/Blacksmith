@@ -54,6 +54,7 @@ public class EfficientZipFileSystem extends FileSystem {
     private final MappedByteBuffer cdBuffer; // memory-mapped central directory, null for empty zips
     private final DirNode root;
     private final EfficientZipFileSystemProvider provider;
+    private final Thread shutdownHook; // non-null if tempFile is non-null
     private volatile boolean closed;
 
     public EfficientZipFileSystem(Path zipPath) throws IOException {
@@ -72,6 +73,16 @@ public class EfficientZipFileSystem extends FileSystem {
         }
         this.zipFile = zf;
         this.tempFile = tmp;
+        if (tmp != null) {
+            Path tempRef = tmp;
+            Thread hook = new Thread(() -> {
+                try { Files.deleteIfExists(tempRef); } catch (IOException ignored) {}
+            });
+            Runtime.getRuntime().addShutdownHook(hook);
+            this.shutdownHook = hook;
+        } else {
+            this.shutdownHook = null;
+        }
         Path mmapPath = (tmp != null) ? tmp : zipPath;
         this.cdBuffer = mmapCentralDirectory(mmapPath);
         this.root = buildTree();
@@ -236,7 +247,13 @@ public class EfficientZipFileSystem extends FileSystem {
         if (!closed) {
             closed = true;
             zipFile.close();
-            if (tempFile != null) Files.deleteIfExists(tempFile);
+            if (tempFile != null) {
+                Files.deleteIfExists(tempFile);
+                try {
+                    Runtime.getRuntime().removeShutdownHook(shutdownHook);
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
 
