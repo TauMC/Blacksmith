@@ -45,6 +45,7 @@ public class TransformerCore {
         TRANSFORMERS.add(new UnionFileSystemTransformer());
         TRANSFORMERS.add(new PathFileSystemTransformer());
         TRANSFORMERS.add(new MixinServiceLaunchWrapperTransformer());
+        TRANSFORMERS.add(new ListenerListLazyAllocTransformer());
     }
 
     public static void log(String s) {
