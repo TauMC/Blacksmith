@@ -134,23 +134,27 @@ public class ListenerListLazyAllocTransformer implements RuntimeTransformer, Opc
         il.add(new JumpInsnNode(IFNULL, noParentLabel));
 
         // inst = new ListenerListInst(this.parent.getOrCreateInstance(id));
+        // Note: ListenerListInst is an inner class, so <init> takes the outer ListenerList as first arg
         il.add(new TypeInsnNode(NEW, INST));
         il.add(new InsnNode(DUP));
+        il.add(new VarInsnNode(ALOAD, 0)); // outer this
         il.add(new VarInsnNode(ALOAD, 0));
         il.add(new FieldInsnNode(GETFIELD, OWNER, "parent", "L" + OWNER + ";"));
         il.add(new VarInsnNode(ILOAD, 1));
         il.add(new MethodInsnNode(INVOKEVIRTUAL, OWNER, "getOrCreateInstance", "(I)" + INST_DESC, false));
-        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>", "(" + INST_DESC + ")V", false));
+        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>", "(L" + OWNER + ";" + INST_DESC + ")V", false));
         il.add(new VarInsnNode(ASTORE, 2));
         Label storeAndReturn = new Label();
         LabelNode storeAndReturnLabel = new LabelNode(storeAndReturn);
         il.add(new JumpInsnNode(GOTO, storeAndReturnLabel));
 
         // else: inst = new ListenerListInst();
+        // Note: ListenerListInst is an inner class, so <init> takes the outer ListenerList as first arg
         il.add(noParentLabel);
         il.add(new TypeInsnNode(NEW, INST));
         il.add(new InsnNode(DUP));
-        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>", "()V", false));
+        il.add(new VarInsnNode(ALOAD, 0)); // outer this
+        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>", "(L" + OWNER + ";)V", false));
         il.add(new VarInsnNode(ASTORE, 2));
 
         // this.lists[id] = inst;
