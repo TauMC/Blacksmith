@@ -55,8 +55,14 @@ public class EfficientZipPath implements Path {
     }
 
     private String buildPathString() {
+        var components = this.components;
         if (components.length == 0) return absolute ? "/" : "";
-        StringBuilder sb = new StringBuilder();
+        // approximate correct size to avoid resizing
+        int sz = 1;
+        for (int i = 0; i < components.length; i++) {
+            sz = components[i].length() + 1;
+        }
+        StringBuilder sb = new StringBuilder(sz - 1);
         if (absolute) sb.append('/');
         for (int i = 0; i < components.length; i++) {
             if (i > 0) sb.append('/');

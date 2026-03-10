@@ -96,18 +96,10 @@ public class EfficientZipFileSystemProvider extends FileSystemProvider {
             Path childPath = p.resolve(childName + "/");
             if (filter.accept(childPath)) entries.add(childPath);
         }
-        // Scan zip entries for file children (not tracked in the directory tree)
-        String prefix = p.getEntryName();
-        if (!prefix.isEmpty()) prefix = prefix + "/";
-        Enumeration<? extends ZipEntry> zipEntries = fs.getZipFile().entries();
-        while (zipEntries.hasMoreElements()) {
-            ZipEntry ze = zipEntries.nextElement();
-            String name = ze.getName();
-            if (ze.isDirectory() || !name.startsWith(prefix)) continue;
-            String remainder = name.substring(prefix.length());
-            // Only immediate children (no slashes)
-            if (remainder.isEmpty() || remainder.indexOf('/') >= 0) continue;
-            Path childPath = p.resolve(remainder);
+        // File children from precomputed central directory offsets
+        for (int offset : dirNode.fileChildOffsets) {
+            String childName = fs.readBasename(offset);
+            Path childPath = p.resolve(childName);
             if (filter.accept(childPath)) entries.add(childPath);
         }
 
