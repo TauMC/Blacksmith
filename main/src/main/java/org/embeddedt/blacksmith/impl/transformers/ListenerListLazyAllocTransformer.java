@@ -49,8 +49,9 @@ public class ListenerListLazyAllocTransformer implements RuntimeTransformer, Opc
 
     @Override
     public void transformClass(ClassNode data) throws IllegalClassFormatException {
+        boolean instIsStatic = isInstStatic(data);
         addEmptyListenersField(data);
-        addGetOrCreateInstanceMethod(data);
+        addGetOrCreateInstanceMethod(data, instIsStatic);
 
         for (MethodNode method : data.methods) {
             switch (method.name) {
@@ -101,7 +102,19 @@ public class ListenerListLazyAllocTransformer implements RuntimeTransformer, Opc
         }
     }
 
-    private void addGetOrCreateInstanceMethod(ClassNode data) {
+    private boolean isInstStatic(ClassNode data) {
+        if (data.innerClasses != null) {
+            for (InnerClassNode icn : data.innerClasses) {
+                if (INST.equals(icn.name)) {
+                    return (icn.access & ACC_STATIC) != 0;
+                }
+            }
+        }
+        // Default to non-static (the more common case in older Forge)
+        return false;
+    }
+
+    private void addGetOrCreateInstanceMethod(ClassNode data, boolean instIsStatic) {
         // private synchronized ListenerListInst getOrCreateInstance(int id)
         MethodNode m = new MethodNode(ACC_PRIVATE | ACC_SYNCHRONIZED,
                 "getOrCreateInstance", "(I)" + INST_DESC, null, null);
@@ -133,28 +146,32 @@ public class ListenerListLazyAllocTransformer implements RuntimeTransformer, Opc
         il.add(new FieldInsnNode(GETFIELD, OWNER, "parent", "L" + OWNER + ";"));
         il.add(new JumpInsnNode(IFNULL, noParentLabel));
 
-        // inst = new ListenerListInst(this.parent.getOrCreateInstance(id));
-        // Note: ListenerListInst is an inner class, so <init> takes the outer ListenerList as first arg
+        // inst = new ListenerListInst([this,] this.parent.getOrCreateInstance(id));
         il.add(new TypeInsnNode(NEW, INST));
         il.add(new InsnNode(DUP));
-        il.add(new VarInsnNode(ALOAD, 0)); // outer this
+        if (!instIsStatic) {
+            il.add(new VarInsnNode(ALOAD, 0)); // outer this for non-static inner class
+        }
         il.add(new VarInsnNode(ALOAD, 0));
         il.add(new FieldInsnNode(GETFIELD, OWNER, "parent", "L" + OWNER + ";"));
         il.add(new VarInsnNode(ILOAD, 1));
         il.add(new MethodInsnNode(INVOKEVIRTUAL, OWNER, "getOrCreateInstance", "(I)" + INST_DESC, false));
-        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>", "(L" + OWNER + ";" + INST_DESC + ")V", false));
+        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>",
+                instIsStatic ? "(" + INST_DESC + ")V" : "(L" + OWNER + ";" + INST_DESC + ")V", false));
         il.add(new VarInsnNode(ASTORE, 2));
         Label storeAndReturn = new Label();
         LabelNode storeAndReturnLabel = new LabelNode(storeAndReturn);
         il.add(new JumpInsnNode(GOTO, storeAndReturnLabel));
 
         // else: inst = new ListenerListInst();
-        // Note: ListenerListInst is an inner class, so <init> takes the outer ListenerList as first arg
         il.add(noParentLabel);
         il.add(new TypeInsnNode(NEW, INST));
         il.add(new InsnNode(DUP));
-        il.add(new VarInsnNode(ALOAD, 0)); // outer this
-        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>", "(L" + OWNER + ";)V", false));
+        if (!instIsStatic) {
+            il.add(new VarInsnNode(ALOAD, 0)); // outer this for non-static inner class
+        }
+        il.add(new MethodInsnNode(INVOKESPECIAL, INST, "<init>",
+                instIsStatic ? "()V" : "(L" + OWNER + ";)V", false));
         il.add(new VarInsnNode(ASTORE, 2));
 
         // this.lists[id] = inst;
